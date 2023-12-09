@@ -62,9 +62,17 @@ require_once('php/contact.class.php');
             <input type="text" id="edit-categorie" name="edit-categorie" required>
             <!-- Ajoutez d'autres champs selon vos besoins -->
 
-            <button type="button" class="edit-form" onclick="submitEditForm()" id="bouton-enregistrer">Enregistrer</button>
+            <button type="button" class="edit-form"  id="bouton-enregistrer">Enregistrer</button>
             <button type="button" class="close-modal bouton-fermer-modal">Annuler</button>
         </form>
+    </div>
+</div>
+
+<div id="modal" class="modal">
+    <div class="modal-container">
+        <span id="close-modal" class="close">&times;</span>
+        <h2 id="modal-title" class="modal-title"></h2>
+        <div id="modal-body" class="modal-body"></div>
     </div>
 </div>
 
