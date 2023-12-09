@@ -26,8 +26,8 @@ require_once('php/contact.class.php');
 
 <div id="add-contact-modal" class="modal">
     <div class="modal-content">
-        <span class="close">&times;</span>
-        <!-- Contenu du formulaire pour ajouter un contact -->
+        <span class="close closeModalAdd">&times;</span>
+        <h2>Ajout d'un contact</h2>
         <form id="add-contact-form">
             <!-- Ajoutez les champs du formulaire pour le nom, prénom, catégorie, etc. -->
             <!-- Assurez-vous de garder les noms de champs identiques à ceux dans votre script jQuery -->
@@ -40,7 +40,8 @@ require_once('php/contact.class.php');
             <label for="categorie_type">Catégorie :</label>
             <input type="text" id="categorie_type" name="categorie_type" required>
 
-            <input type="submit" value="Ajouter">
+            <input type="submit" value="Ajouter" class="addContact">
+            <button type="button" class="closeModalAdd cancelAddContact">Annuler</button>
         </form>
     </div>
 </div>

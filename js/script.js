@@ -164,11 +164,12 @@ $(document).ready(function () {
     $('#add-contact-btn').click(function () {
         $('#add-contact-modal').css('display', 'block');
     });
-
-    // Gestion de la fermeture de la boîte modale
-    $('.close').click(function () {
+    document.querySelectorAll('.closeModalAdd').forEach(function (bouton) {
+        bouton.addEventListener('click', function() {
         $('#add-contact-modal').css('display', 'none');
+        });
     });
+    // Gestion de la fermeture de la boîte modale
 
     // Soumission du formulaire d'ajout de contact via AJAX
     $('#add-contact-form').submit(function (event) {
@@ -179,7 +180,7 @@ $(document).ready(function () {
         var categorieType = $('#categorie_type').val();
 
         $.ajax({
-            url: '../php/ajax.php',
+            url: 'http://localhost:8000/php/ajax.php',
             type: 'POST',
             data: {
                 action: 'add_contact',
