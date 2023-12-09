@@ -5,143 +5,78 @@ class Contact{
     public function __construct($pdo) {
         $this->pdo = $pdo;
     }
-    public function addCategory($data) {
+    public function getContactsList() {
+        // Méthode pour récupérer la liste des contacts avec le nom de la catégorie
+        $query = "SELECT c.id, c.nom, c.prenom, cat.type as categorie_type FROM contact c
+                  LEFT JOIN categorie cat ON c.categorie_id = cat.id";
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute();
+
+        $contactsList = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return $contactsList;
+    }
+
+    public function addContact($nom, $prenom, $categorieType) {
+        $categorieId=$this->getCategorieId($categorieType);
+        // Méthode pour ajouter un nouveau contact
+        $query = "INSERT INTO contact (nom, prenom, categorie_id) VALUES (?, ?, ?)";
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute([$nom, $prenom, $categorieId]);
+    }
+
+    public function updateContact($contactId, $nom, $prenom, $categorieType) {
+        $categorieId=$this->getCategorieId($categorieType);
+        // Méthode pour mettre à jour un contact
+        $query = "UPDATE contact SET nom=?, prenom=?, categorie_id=? WHERE id=?";
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute([$nom, $prenom, $categorieId, $contactId]);
+    }
+
+    public function getCategorieId($categorieType) {
         try {
-            $query = "INSERT INTO categorie (type) VALUES (:type)";
+            $query = "SELECT id FROM categorie WHERE type = ?";
             $stmt = $this->pdo->prepare($query);
-            $stmt->bindParam(':type', $data['type'], PDO::PARAM_STR);
-            $stmt->execute();
-            return true;
+            $stmt->execute([$categorieType]);
+    
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+            if ($result) {
+                return $result['id'];
+            } else {
+                // La catégorie n'existe pas, créons-la
+                $queryInsert = "INSERT INTO categorie (type) VALUES (?)";
+                $stmtInsert = $this->pdo->prepare($queryInsert);
+                $stmtInsert->execute([$categorieType]);
+    
+                // Récupérer l'ID de la nouvelle catégorie
+                $newCategoryId = $this->pdo->lastInsertId();
+    
+                return $newCategoryId;
+            }
         } catch (PDOException $e) {
-            echo "Erreur lors de l'ajout de la categorie : " . $e->getMessage();
-            return false;
+            echo "Error: " . $e->getMessage();
+            return null;
         }
     }
-    public function getCategorieById($categorieId){
+
+    public function getContactInfo($contactId) {
         try {
-            $query = "SELECT * FROM categorie WHERE id = :id";
+            $query = "SELECT * FROM contact WHERE id = ?";
             $stmt = $this->pdo->prepare($query);
-            $stmt->bindParam(':id', $categorieId, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->execute([$contactId]);
+    
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+            return $result;
         } catch (PDOException $e) {
-            echo "Erreur lors de la récupération de la categorie : " . $e->getMessage();
-            return false;
+            // Gérer les erreurs de base de données ici
+            // Vous pouvez logger l'erreur, afficher un message à l'utilisateur, etc.
+            echo "Error: " . $e->getMessage();
+            return null;
         }
     }
-    public function getCategorieIdByType($type){
-        try {
-            $query = "SELECT id FROM categorie WHERE type = :type";
-            $stmt = $this->pdo->prepare($query);
-            $stmt->bindParam(':id', $type, PDO::PARAM_INT);
-            $stmt->execute();
-            $result= $stmt->fetch(PDO::FETCH_ASSOC);
-            return ($result) ? $result['id'] : null;        
-        } 
-        catch (PDOException $e) {
-            echo "Erreur lors de la récupération de la categorie : " . $e->getMessage();
-            return false;
-        }
-    }
-    public function addContact($data){ 
-        $categorieId = $this->getCategorieIdByType($data['type']);
-        if( $categorieId!==null){
-            try {
-                $query = "INSERT INTO contact (nom, prenom, categorie_id) VALUES (:nom,:prenom,:categorie)";
-                $stmt = $this->pdo->prepare($query);
-                $stmt->bindParam(':nom', $data['nom'], PDO::PARAM_STR);
-                $stmt->bindParam(':prenom', $data['prenom'], PDO::PARAM_STR);
-                $stmt->bindParam(':categorie', $categorieId, PDO::PARAM_STR);
-                $stmt->execute();
-                return true;
-            } catch (PDOException $e) {
-                echo "Erreur lors de l'ajout du contact : " . $e->getMessage();
-                return false;
-            }
-        }else{
-            $this->addCategory($data['type']);
-            try {
-                $query = "INSERT INTO contact (nom, prenom, categorie_id) VALUES (:nom,:prenom,:categorie)";
-                $stmt = $this->pdo->prepare($query);
-                $stmt->bindParam(':nom', $data['nom'], PDO::PARAM_STR);
-                $stmt->bindParam(':prenom', $data['prenom'], PDO::PARAM_STR);
-                $stmt->bindParam(':categorie', $categorieId, PDO::PARAM_STR);
-                $stmt->execute();
-                return true;
-            } catch (PDOException $e) {
-                echo "Erreur lors de l'ajout du contact : " . $e->getMessage();
-                return false;
-            }
-
-        }
-       
-    }
-    public function updateContact($data){ 
-        $categorieId = $this->getCategorieIdByType($data['type']);
-        if( $categorieId!==null){
-            try {
-                $query = "UPDATE contact SET nom = :nom, prenom = :prenom, categorie_id = :categorie WHERE id = :id";
-                $stmt = $this->pdo->prepare($query);
-                $stmt->bindParam(':nom', $data['nom'], PDO::PARAM_STR);
-                $stmt->bindParam(':prenom', $data['prenom'], PDO::PARAM_STR);
-                $stmt->bindParam(':categorie', $categorieId, PDO::PARAM_STR);
-                $stmt->execute();
-                return true;
-            } catch (PDOException $e) {
-                echo "Erreur lors de la modification du contact : " . $e->getMessage();
-                return false;
-            }
-        }else{
-            $this->addCategory($data['type']);
-            try {
-                $query = "INSERT INTO contact (nom, prenom, categorie_id) VALUES (:nom,:prenom,:categorie)";
-                $stmt = $this->pdo->prepare($query);
-                $stmt->bindParam(':nom', $data['nom'], PDO::PARAM_STR);
-                $stmt->bindParam(':prenom', $data['prenom'], PDO::PARAM_STR);
-                $stmt->bindParam(':categorie', $categorieId, PDO::PARAM_STR);
-                $stmt->execute();
-                return true;
-            } catch (PDOException $e) {
-                echo "Erreur lors de la modification du contact: " . $e->getMessage();
-                return false;
-            }
-
-        }
-       
-    }
-
-
-    public function getContactById($id) {
-        try {
-            $query = "SELECT * FROM contact WHERE id = :id";
-            $stmt = $this->pdo->prepare($query);
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Erreur lors de la récupération du contact : " . $e->getMessage();
-            return false;
-        }
-    }
-
-    public function getContactsWithCategories() {
-        try {
-            $query = "SELECT contact.id, contact.nom, contact.prenom, categorie.type as categorie_type
-            FROM contact LEFT JOIN categorie ON contact.categorie_id = categorie.id";
-            $stmt = $this->pdo->query($query);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            echo "Erreur lors de la récupération des contacts : " . $e->getMessage();
-            return false;
-        }
-    }
-
-
-
-
 }
-
-
 
 
 ?>

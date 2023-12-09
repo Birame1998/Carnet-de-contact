@@ -1,50 +1,76 @@
 <?php
-// ajax.php - Point d'entrée pour les appels Ajax
+require_once 'contact.class.php';
+require_once 'database.php';
 
-// Inclure la classe contact
+$action = $_POST['action'];
+$contact = new Contact($pdo);
 
-require_once('database.php');
-require_once('contact.class.php');
+if ($action === 'get_contacts') {
+    $contactsList = $contact->getContactsList();
+    echo json_encode($contactsList);
+    
+} elseif ($action === 'add_contact') {
+    $nom = $_POST['nom'];
+    $prenom = $_POST['prenom'];
+    $categorie_type = $_POST['categorie_type'];
+    $contact->addContact($nom, $prenom, $categorie_type);
+} elseif ($action === 'update_contact') {
+    $contactId = $_POST['contact_id'];
+    $nom = $_POST['nom'];
+    $prenom = $_POST['prenom'];
+    $categorieType = $_POST['categorie_type'];
 
-// Vérifier le type d'appel Ajax
-if (isset($_POST['action'])) {
+    $contact->updateContact($contactId, $nom, $prenom, $categorieType);
+}elseif ($action === 'get_contact_info' && isset($_POST['contact_id'])) {
+    $contactId = $_POST['contact_id'];
+
+    try {
+        // Initialisez votre connexion à la base de données
+        // ...
+
+        // Récupérez les informations du contact depuis la base de données
+        $stmt = $pdo->prepare('SELECT contact.*, categorie.type AS categorie_type FROM contact INNER JOIN categorie ON contact.categorie_id = categorie.id WHERE contact.id = :contactId');
+        $stmt->bindParam(':contactId', $contactId);
+        $stmt->execute();
+        $contactInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Répondez avec succès
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'data' => $contactInfo]);
+        exit;
+    } catch (PDOException $e) {
+        // Gérez les erreurs de la base de données
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Erreur lors de la récupération des informations du contact : ' . $e->getMessage()]);
+        exit;
+    }
+} 
+ elseif (isset($_POST['action'])) {
     $action = $_POST['action'];
 
-    // Instancier la classe contact
-    $contact = new Contact($pdo);
+    if ($action === 'get_contact' && isset($_POST['contact_id'])) {
+        $contactId = $_POST['contact_id'];
 
-    // Traiter les différentes actions
-    switch ($action) {
-        case 'get_contacts':
-            echo json_encode($contact->getContactsWithCategories());
-            break;
+        // Effectuez votre requête SQL pour récupérer les informations du contact
+        try {
+            // Initialisez votre connexion à la base de données
+            // ...
 
-        case 'add_contact':
-            // Récupérer les données du formulaire
-            $data = json_decode($_POST['data'], true);
-            echo json_encode($contact->addContact($data));
-            break;
+            // Effectuez la requête SQL pour récupérer les informations du contact
+            $stmt = $pdo->prepare('SELECT * FROM contact WHERE id = :contactId');
+            $stmt->bindParam(':contactId', $contactId);
+            $stmt->execute();
+            $contactInfo = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        case 'update_contact':
-            // Récupérer les données du formulaire
-            $data = json_decode($_POST['data'], true);
-            echo json_encode($contact->updateContact($data));
-            break;
-        case 'add_category':
-            // Récupérer les données du formulaire
-            $data = json_decode($_POST['data'], true);
-            echo json_encode($contact->addCategory($data));
-            break;    
-
-        // Ajoutez d'autres cas selon vos besoins
-
-        default:
-            // Gérer une action inconnue
-            echo json_encode(['error' => 'Action inconnue']);
-            break;
+            // Envoyez les informations du contact au format JSON
+            echo json_encode($contactInfo);
+        } catch (PDOException $e) {
+            // Gérez les erreurs de la base de données
+            echo json_encode(['error' => 'Erreur lors de la récupération des informations du contact : ' . $e->getMessage()]);
+        }
     }
-} else {
-    // Gérer les appels non-Ajax (redirection ou erreur)
-    echo json_encode(['error' => 'Appel non-Ajax interdit']);
 }
-?>
+    // Ajoutez le code pour la suppression d'un contact ici
+ else {
+    // Autres actions à traiter si nécessaire
+}
